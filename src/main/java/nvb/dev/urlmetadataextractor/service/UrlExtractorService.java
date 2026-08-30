@@ -3,6 +3,7 @@ package nvb.dev.urlmetadataextractor.service;
 import lombok.RequiredArgsConstructor;
 import nvb.dev.urlmetadataextractor.dto.ExtractMetadataRequest;
 import nvb.dev.urlmetadataextractor.dto.ExtractMetadataResponse;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,8 @@ public class UrlExtractorService {
         ResponseEntity<String> responseEntity = restClient.get()
                 .uri(URI.create(url))
                 .retrieve()
+                .onStatus(HttpStatusCode::isError, (req, resp) -> {
+                })
                 .toEntity(String.class);
 
         int statusCode = responseEntity.getStatusCode().value();
