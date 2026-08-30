@@ -1,6 +1,5 @@
 package nvb.dev.urlmetadataextractor.exception;
 
-import org.springframework.core.NestedExceptionUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -13,13 +12,15 @@ import java.net.http.HttpTimeoutException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final String TIMEOUT_MSG = "The target URL did not respond in time.";
+    private static final String OTHER_MSG = "Could not connect to the target URL.";
+
     @ExceptionHandler(ResourceAccessException.class)
     public ResponseEntity<ErrorApiResponse> handleResourceAccessException(ResourceAccessException ex) {
         boolean isTimeout = isTimeoutInChain(ex);
-        HttpStatus status = isTimeout ? HttpStatus.GATEWAY_TIMEOUT : HttpStatus.BAD_GATEWAY;
 
-        Throwable mostSpecificCause = NestedExceptionUtils.getMostSpecificCause(ex);
-        String message = mostSpecificCause.getMessage() != null ? mostSpecificCause.getMessage() : ex.getMessage();
+        HttpStatus status = isTimeout ? HttpStatus.GATEWAY_TIMEOUT : HttpStatus.BAD_GATEWAY;
+        String message = isTimeout ? TIMEOUT_MSG : OTHER_MSG;
 
         ErrorApiResponse response = new ErrorApiResponse(status.value(), message);
         return ResponseEntity.status(status).body(response);
