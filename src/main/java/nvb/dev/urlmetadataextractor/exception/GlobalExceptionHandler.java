@@ -26,6 +26,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(response);
     }
 
+    @ExceptionHandler(InvalidUrlException.class)
+    public ResponseEntity<ErrorApiResponse> handleInvalidUrlException(InvalidUrlException ex) {
+        ErrorApiResponse response = new ErrorApiResponse(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(response);
+    }
+
     private boolean isTimeoutInChain(Throwable throwable) {
         Throwable current = throwable;
         while (current != null) {
