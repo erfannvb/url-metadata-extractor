@@ -33,6 +33,13 @@ public class GlobalExceptionHandler {
                 .body(response);
     }
 
+    @ExceptionHandler(ResponseTooLargeException.class)
+    public ResponseEntity<ErrorApiResponse> handleResponseTooLargeException(ResponseTooLargeException ex) {
+        ErrorApiResponse response = new ErrorApiResponse(HttpStatus.CONTENT_TOO_LARGE.value(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE)
+                .body(response);
+    }
+
     private boolean isTimeoutInChain(Throwable throwable) {
         Throwable current = throwable;
         while (current != null) {

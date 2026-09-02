@@ -19,7 +19,7 @@ public class UrlExtractorController {
 
     @PostMapping(path = "/metadata")
     public ExtractMetadataResponse extractMetadata(@Valid @RequestBody ExtractMetadataRequest request) {
-        return null;
+        return urlExtractorService.extractMetadata(request);
     }
 
 }
