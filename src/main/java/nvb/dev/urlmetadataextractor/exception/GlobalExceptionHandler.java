@@ -40,6 +40,16 @@ public class GlobalExceptionHandler {
                 .body(response);
     }
 
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorApiResponse> handleRuntimeErrorException(RuntimeException ex) {
+        ErrorApiResponse response = new ErrorApiResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "An unexpected error occurred."
+        );
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(response);
+    }
+
     private boolean isTimeoutInChain(Throwable throwable) {
         Throwable current = throwable;
         while (current != null) {
