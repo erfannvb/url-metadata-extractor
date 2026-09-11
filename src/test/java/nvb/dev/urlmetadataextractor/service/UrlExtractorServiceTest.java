@@ -72,18 +72,14 @@ class UrlExtractorServiceTest {
     void shouldReturnMetadata_whenTargetUrlRespondsSuccessfully() throws IOException {
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream("Hello".getBytes(StandardCharsets.UTF_8));
 
-        when(restClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(URI.create("https://example.com"))).thenReturn(requestHeadersSpec);
+        setupRestClientRequest();
+
         when(urlExtractorProperties.getMaxResponseSize()).thenReturn(DataSize.ofBytes(1000));
         when(clientHttpResponse.getStatusCode()).thenReturn(HttpStatus.OK);
         when(clientHttpResponse.getHeaders()).thenReturn(httpHeaders);
         when(clientHttpResponse.getHeaders().getContentType()).thenReturn(MediaType.TEXT_PLAIN);
         when(clientHttpResponse.getBody()).thenReturn(byteArrayInputStream);
         when(responseBodyReader.read(byteArrayInputStream, 1000)).thenReturn("Hello".getBytes(StandardCharsets.UTF_8));
-        when(requestHeadersSpec.exchange(any())).thenAnswer(invocation -> {
-            RestClient.RequestHeadersSpec.ExchangeFunction<ExtractMetadataResponse> exchangeFunction = invocation.getArgument(0);
-            return exchangeFunction.exchange(clientHttpRequest, clientHttpResponse);
-        });
 
         ExtractMetadataRequest request = new ExtractMetadataRequest("https://example.com");
         ExtractMetadataResponse response = urlExtractorService.extractMetadata(request);
@@ -101,18 +97,14 @@ class UrlExtractorServiceTest {
     void shouldReturnMetadataWithUtf8Body_whenContentTypeIsMissing() throws IOException {
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream("Hello".getBytes(StandardCharsets.UTF_8));
 
-        when(restClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(URI.create("https://example.com"))).thenReturn(requestHeadersSpec);
+        setupRestClientRequest();
+
         when(urlExtractorProperties.getMaxResponseSize()).thenReturn(DataSize.ofBytes(1000));
         when(clientHttpResponse.getStatusCode()).thenReturn(HttpStatus.OK);
         when(clientHttpResponse.getHeaders()).thenReturn(httpHeaders);
         when(clientHttpResponse.getHeaders().getContentType()).thenReturn(null);
         when(clientHttpResponse.getBody()).thenReturn(byteArrayInputStream);
         when(responseBodyReader.read(byteArrayInputStream, 1000)).thenReturn("Hello".getBytes(StandardCharsets.UTF_8));
-        when(requestHeadersSpec.exchange(any())).thenAnswer(invocation -> {
-            RestClient.RequestHeadersSpec.ExchangeFunction<ExtractMetadataResponse> exchangeFunction = invocation.getArgument(0);
-            return exchangeFunction.exchange(clientHttpRequest, clientHttpResponse);
-        });
 
         ExtractMetadataRequest request = new ExtractMetadataRequest("https://example.com");
         ExtractMetadataResponse response = urlExtractorService.extractMetadata(request);
@@ -128,16 +120,12 @@ class UrlExtractorServiceTest {
 
     @Test
     void shouldReturnEmptyBody_whenResponseBodyIsNull() throws IOException {
-        when(restClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(URI.create("https://example.com"))).thenReturn(requestHeadersSpec);
+        setupRestClientRequest();
+
         when(clientHttpResponse.getStatusCode()).thenReturn(HttpStatus.OK);
         when(clientHttpResponse.getHeaders()).thenReturn(httpHeaders);
         when(clientHttpResponse.getHeaders().getContentType()).thenReturn(MediaType.TEXT_PLAIN);
         when(clientHttpResponse.getBody()).thenReturn(null);
-        when(requestHeadersSpec.exchange(any())).thenAnswer(invocation -> {
-            RestClient.RequestHeadersSpec.ExchangeFunction<ExtractMetadataResponse> exchangeFunction = invocation.getArgument(0);
-            return exchangeFunction.exchange(clientHttpRequest, clientHttpResponse);
-        });
 
         ExtractMetadataRequest request = new ExtractMetadataRequest("https://example.com");
         ExtractMetadataResponse response = urlExtractorService.extractMetadata(request);
@@ -157,18 +145,14 @@ class UrlExtractorServiceTest {
 
         MediaType mediaType = new MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_16);
 
-        when(restClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(URI.create("https://example.com"))).thenReturn(requestHeadersSpec);
+        setupRestClientRequest();
+
         when(urlExtractorProperties.getMaxResponseSize()).thenReturn(DataSize.ofBytes(1000));
         when(clientHttpResponse.getStatusCode()).thenReturn(HttpStatus.OK);
         when(clientHttpResponse.getHeaders()).thenReturn(httpHeaders);
         when(clientHttpResponse.getHeaders().getContentType()).thenReturn(mediaType);
         when(clientHttpResponse.getBody()).thenReturn(byteArrayInputStream);
         when(responseBodyReader.read(byteArrayInputStream, 1000)).thenReturn("Hello".getBytes(StandardCharsets.UTF_16));
-        when(requestHeadersSpec.exchange(any())).thenAnswer(invocation -> {
-            RestClient.RequestHeadersSpec.ExchangeFunction<ExtractMetadataResponse> exchangeFunction = invocation.getArgument(0);
-            return exchangeFunction.exchange(clientHttpRequest, clientHttpResponse);
-        });
 
         ExtractMetadataRequest request = new ExtractMetadataRequest("https://example.com");
         ExtractMetadataResponse response = urlExtractorService.extractMetadata(request);
@@ -186,18 +170,14 @@ class UrlExtractorServiceTest {
     void shouldDecodeBodyUsingUtf8_whenContentTypeDoesNotSpecifyCharset() throws IOException {
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream("Hello".getBytes());
 
-        when(restClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(URI.create("https://example.com"))).thenReturn(requestHeadersSpec);
+        setupRestClientRequest();
+
         when(urlExtractorProperties.getMaxResponseSize()).thenReturn(DataSize.ofBytes(1000));
         when(clientHttpResponse.getStatusCode()).thenReturn(HttpStatus.OK);
         when(clientHttpResponse.getHeaders()).thenReturn(httpHeaders);
         when(clientHttpResponse.getHeaders().getContentType()).thenReturn(MediaType.TEXT_PLAIN);
         when(clientHttpResponse.getBody()).thenReturn(byteArrayInputStream);
         when(responseBodyReader.read(byteArrayInputStream, 1000)).thenReturn("Hello".getBytes());
-        when(requestHeadersSpec.exchange(any())).thenAnswer(invocation -> {
-            RestClient.RequestHeadersSpec.ExchangeFunction<ExtractMetadataResponse> exchangeFunction = invocation.getArgument(0);
-            return exchangeFunction.exchange(clientHttpRequest, clientHttpResponse);
-        });
 
         ExtractMetadataRequest request = new ExtractMetadataRequest("https://example.com");
         ExtractMetadataResponse response = urlExtractorService.extractMetadata(request);
@@ -209,5 +189,19 @@ class UrlExtractorServiceTest {
         verify(restClient, times(1)).get();
         verify(requestHeadersUriSpec, times(1)).uri(URI.create("https://example.com"));
         verify(responseBodyReader, times(1)).read(byteArrayInputStream, 1000);
+    }
+
+    private void setupRestClientRequest() {
+        when(restClient.get()).thenReturn(requestHeadersUriSpec);
+
+        when(requestHeadersUriSpec.uri(any(URI.class)))
+                .thenReturn(requestHeadersSpec);
+
+        when(requestHeadersSpec.exchange(any())).thenAnswer(invocation -> {
+            RestClient.RequestHeadersSpec.ExchangeFunction<ExtractMetadataResponse> exchangeFunction =
+                    invocation.getArgument(0);
+
+            return exchangeFunction.exchange(clientHttpRequest, clientHttpResponse);
+        });
     }
 }
