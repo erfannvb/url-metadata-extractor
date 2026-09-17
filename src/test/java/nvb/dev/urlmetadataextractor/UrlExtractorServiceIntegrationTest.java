@@ -32,6 +32,11 @@ public class UrlExtractorServiceIntegrationTest {
             .options(wireMockConfig().dynamicPort())
             .build();
 
+    @RegisterExtension
+    static WireMockExtension wireMockExtension2 = WireMockExtension.newInstance()
+            .options(wireMockConfig().dynamicPort())
+            .build();
+
     @Test
     void shouldExtractMetadata_whenRemoteServerReturnsSuccess() {
         wireMockExtension.stubFor(
@@ -233,5 +238,40 @@ public class UrlExtractorServiceIntegrationTest {
 
         wireMockExtension.verify(exactly(3), getRequestedFor(urlEqualTo("/page1")));
         wireMockExtension.verify(exactly(2), getRequestedFor(urlEqualTo("/page2")));
+    }
+
+    @Test
+    void shouldFollowRedirect_whenRedirectsToAnotherHost() {
+        wireMockExtension.stubFor(
+                get(urlEqualTo("/old-page"))
+                        .willReturn(
+                                aResponse()
+                                        .withStatus(302)
+                                        .withHeader("Location", "http://127.0.0.1:" + wireMockExtension2.getPort() + "/new-page")
+                        )
+        );
+
+        wireMockExtension2.stubFor(
+                get(urlEqualTo("/new-page"))
+                        .willReturn(
+                                aResponse()
+                                        .withStatus(200)
+                                        .withHeader("Content-Type", "text/html")
+                                        .withBody("<html>New Page</html>")
+                        )
+        );
+
+        String url = "http://127.0.0.1:" + wireMockExtension.getPort() + "/old-page";
+        ExtractMetadataResponse response = urlExtractorService.extractMetadata(new ExtractMetadataRequest(url));
+
+
+        assertAll(
+                () -> assertThat(response.statusCode()).isEqualTo(200),
+                () -> assertThat(response.contentType()).isEqualTo("text/html"),
+                () -> assertThat(response.body()).isEqualTo("<html>New Page</html>")
+        );
+
+        wireMockExtension.verify(getRequestedFor(urlEqualTo("/old-page")));
+        wireMockExtension2.verify(getRequestedFor(urlEqualTo("/new-page")));
     }
 }
