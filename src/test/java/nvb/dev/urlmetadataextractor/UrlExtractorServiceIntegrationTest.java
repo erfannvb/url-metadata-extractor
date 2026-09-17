@@ -104,4 +104,33 @@ public class UrlExtractorServiceIntegrationTest {
         assertThatThrownBy(() -> urlExtractorService.extractMetadata(new ExtractMetadataRequest(url)))
                 .isInstanceOf(ResponseTooLargeException.class);
     }
+
+    @Test
+    void shouldFollowRedirect_whenRemoteServerRedirects() {
+        wireMockExtension.stubFor(
+                get(urlEqualTo("/old-page"))
+                        .willReturn(
+                                aResponse()
+                                        .withStatus(302)
+                                        .withHeader("Location", "/new-page")
+                        )
+        );
+
+        wireMockExtension.stubFor(
+                get(urlEqualTo("/new-page"))
+                        .willReturn(
+                                aResponse()
+                                        .withStatus(200)
+                                        .withHeader("Content-Type", "text/html")
+                                        .withBody("<html>New Page</html>")
+                        )
+        );
+
+        String url = "http://127.0.0.1:" + wireMockExtension.getPort() + "/old-page";
+        ExtractMetadataResponse response = urlExtractorService.extractMetadata(new ExtractMetadataRequest(url));
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.contentType()).isEqualTo("text/html");
+        assertThat(response.body()).isEqualTo("<html>New Page</html>");
+    }
 }
