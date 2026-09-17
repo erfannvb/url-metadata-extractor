@@ -3,6 +3,7 @@ package nvb.dev.urlmetadataextractor;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import nvb.dev.urlmetadataextractor.dto.ExtractMetadataRequest;
 import nvb.dev.urlmetadataextractor.dto.ExtractMetadataResponse;
+import nvb.dev.urlmetadataextractor.exception.ResponseTooLargeException;
 import nvb.dev.urlmetadataextractor.service.UrlExtractorService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -86,5 +87,21 @@ public class UrlExtractorServiceIntegrationTest {
         assertThatThrownBy(() -> urlExtractorService.extractMetadata(new ExtractMetadataRequest(url)))
                 .isInstanceOf(ResourceAccessException.class)
                 .hasCauseInstanceOf(HttpTimeoutException.class);
+    }
+
+    @Test
+    void shouldThrowResponseTooLargeException_whenRemoteServerReturnsLargeBody() {
+        wireMockExtension.stubFor(
+                get(urlEqualTo("/some-page"))
+                        .willReturn(
+                                aResponse()
+                                        .withHeader("Content-Type", "text/html")
+                                        .withBody("<html>" + "TEST_DATA".repeat(1_000_000) + "</html>")
+                        )
+        );
+
+        String url = "http://127.0.0.1:" + wireMockExtension.getPort() + "/some-page";
+        assertThatThrownBy(() -> urlExtractorService.extractMetadata(new ExtractMetadataRequest(url)))
+                .isInstanceOf(ResponseTooLargeException.class);
     }
 }
