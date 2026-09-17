@@ -18,6 +18,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
 @SpringBootTest
 @TestPropertySource(locations = "classpath:application-test.properties")
@@ -164,9 +165,9 @@ public class UrlExtractorServiceIntegrationTest {
         wireMockExtension.stubFor(
                 get(urlEqualTo("/page1"))
                         .willReturn(
-                        aResponse()
-                                .withStatus(302)
-                                .withHeader("Location", "/page2")
+                                aResponse()
+                                        .withStatus(302)
+                                        .withHeader("Location", "/page2")
                         )
         );
 
@@ -199,5 +200,38 @@ public class UrlExtractorServiceIntegrationTest {
         wireMockExtension.verify(getRequestedFor(urlEqualTo("/page1")));
         wireMockExtension.verify(getRequestedFor(urlEqualTo("/page2")));
         wireMockExtension.verify(getRequestedFor(urlEqualTo("/page3")));
+    }
+
+    @Test
+    void shouldStopFollowingRedirects_whenRedirectLimitIsReached() {
+        wireMockExtension.stubFor(
+                get(urlEqualTo("/page1"))
+                        .willReturn(
+                                aResponse()
+                                        .withStatus(302)
+                                        .withHeader("Location", "/page2")
+                        )
+        );
+
+        wireMockExtension.stubFor(
+                get(urlEqualTo("/page2"))
+                        .willReturn(
+                                aResponse()
+                                        .withStatus(302)
+                                        .withHeader("Location", "/page1")
+                        )
+        );
+
+        String url = "http://127.0.0.1:" + wireMockExtension.getPort() + "/page1";
+        ExtractMetadataResponse response = urlExtractorService.extractMetadata(new ExtractMetadataRequest(url));
+
+        assertAll(
+                () -> assertThat(response.statusCode()).isEqualTo(302),
+                () -> assertThat(response.contentType()).isNull(),
+                () -> assertThat(response.body()).isEmpty()
+        );
+
+        wireMockExtension.verify(exactly(3), getRequestedFor(urlEqualTo("/page1")));
+        wireMockExtension.verify(exactly(2), getRequestedFor(urlEqualTo("/page2")));
     }
 }
