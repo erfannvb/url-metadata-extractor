@@ -158,4 +158,46 @@ public class UrlExtractorServiceIntegrationTest {
                         .withHeader("User-Agent", equalTo("UrlMetadataExtractor/1.0"))
         );
     }
+
+    @Test
+    void shouldFollowMultipleRedirects_whenRemoteServerRedirects() {
+        wireMockExtension.stubFor(
+                get(urlEqualTo("/page1"))
+                        .willReturn(
+                        aResponse()
+                                .withStatus(302)
+                                .withHeader("Location", "/page2")
+                        )
+        );
+
+        wireMockExtension.stubFor(
+                get(urlEqualTo("/page2"))
+                        .willReturn(
+                                aResponse()
+                                        .withStatus(302)
+                                        .withHeader("Location", "/page3")
+                        )
+        );
+
+        wireMockExtension.stubFor(
+                get(urlEqualTo("/page3"))
+                        .willReturn(
+                                aResponse()
+                                        .withStatus(200)
+                                        .withHeader("Content-Type", "text/html")
+                                        .withBody("<html>Final Page</html>")
+                        )
+        );
+
+        String url = "http://127.0.0.1:" + wireMockExtension.getPort() + "/page1";
+        ExtractMetadataResponse response = urlExtractorService.extractMetadata(new ExtractMetadataRequest(url));
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.contentType()).isEqualTo("text/html");
+        assertThat(response.body()).isEqualTo("<html>Final Page</html>");
+
+        wireMockExtension.verify(getRequestedFor(urlEqualTo("/page1")));
+        wireMockExtension.verify(getRequestedFor(urlEqualTo("/page2")));
+        wireMockExtension.verify(getRequestedFor(urlEqualTo("/page3")));
+    }
 }
