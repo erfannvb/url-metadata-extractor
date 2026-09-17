@@ -133,4 +133,29 @@ public class UrlExtractorServiceIntegrationTest {
         assertThat(response.contentType()).isEqualTo("text/html");
         assertThat(response.body()).isEqualTo("<html>New Page</html>");
     }
+
+    @Test
+    void shouldSendUserAgent_whenRequestIsMade() {
+        wireMockExtension.stubFor(
+                get(urlEqualTo("/some-page"))
+                        .willReturn(
+                                aResponse()
+                                        .withStatus(200)
+                                        .withHeader("Content-Type", "text/html")
+                                        .withBody("<html>Some Page</html>")
+                        )
+        );
+
+        String url = "http://127.0.0.1:" + wireMockExtension.getPort() + "/some-page";
+        ExtractMetadataResponse response = urlExtractorService.extractMetadata(new ExtractMetadataRequest(url));
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.contentType()).isEqualTo("text/html");
+        assertThat(response.body()).isEqualTo("<html>Some Page</html>");
+
+        wireMockExtension.verify(
+                getRequestedFor(urlEqualTo("/some-page"))
+                        .withHeader("User-Agent", equalTo("UrlMetadataExtractor/1.0"))
+        );
+    }
 }
