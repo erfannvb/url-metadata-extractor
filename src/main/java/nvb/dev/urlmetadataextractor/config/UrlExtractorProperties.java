@@ -12,4 +12,5 @@ import org.springframework.util.unit.DataSize;
 @Setter
 public class UrlExtractorProperties {
     private DataSize maxResponseSize;
+    private int readTimeout;
 }

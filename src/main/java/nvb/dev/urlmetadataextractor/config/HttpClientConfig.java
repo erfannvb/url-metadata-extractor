@@ -1,5 +1,6 @@
 package nvb.dev.urlmetadataextractor.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
@@ -10,7 +11,10 @@ import java.net.http.HttpClient;
 import java.time.Duration;
 
 @Configuration
+@RequiredArgsConstructor
 public class HttpClientConfig {
+
+    private final UrlExtractorProperties urlExtractorProperties;
 
     @Bean
     public RestClient restClient() {
@@ -20,7 +24,7 @@ public class HttpClientConfig {
                 .build();
 
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
-        factory.setReadTimeout(Duration.ofSeconds(10));
+        factory.setReadTimeout(Duration.ofSeconds(urlExtractorProperties.getReadTimeout()));
 
         return RestClient.builder()
                 .requestFactory(factory)
